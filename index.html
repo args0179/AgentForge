@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentForge — AI Agent File Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/dockerfile.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    :root {
+      --bg: #0d1117; --bg2: #161b22; --bg3: #1c2333; --bg4: #21283b;
+      --border: #30363d; --text: #e6edf3; --text2: #8b949e;
+      --cyan: #00d4ff; --amber: #f59e0b; --green: #3fb950; --red: #f85149; --purple: #bc8cff;
+      --font-ui: 'Inter', sans-serif; --font-code: 'JetBrains Mono', monospace;
+      --radius: 8px; --transition: all .2s ease;
+    }
+    html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); color: var(--text); overflow: hidden }
+    button { font-family: var(--font-ui); cursor: pointer; border: none; outline: none; transition: var(--transition) }
+    input, textarea, select { font-family: var(--font-ui); background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; outline: none; transition: var(--transition) }
+    input:focus, textarea:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,.15) }
+    ::-webkit-scrollbar { width: 6px; height: 6px }
+    ::-webkit-scrollbar-track { background: var(--bg2) }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text2) }
+
+    /* HEADER */
+    #header { display: flex; align-items: center; padding: 0 16px; height: 56px; background: var(--bg2); border-bottom: 1px solid var(--border); gap: 10px; flex-shrink: 0 }
+    .logo { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; color: var(--cyan); white-space: nowrap }
+    .logo span { font-size: 20px }
+    .api-bar { display: flex; align-items: center; gap: 7px; margin-left: auto; flex-wrap: nowrap }
+    #providerSelect { font-size: 12px; padding: 6px 8px; height: 34px; background: var(--bg4); color: var(--cyan); border: 1px solid var(--border); border-radius: var(--radius); font-weight: 700; cursor: pointer; min-width: 100px; }
+    #modelSelect { font-size: 12px; padding: 6px 8px; height: 34px; background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; min-width: 180px; max-width: 240px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; transition: var(--transition) }
+    .status-dot.ok { background: var(--green) }
+    .api-bar input[type="password"] { width: 190px; font-size: 12px; font-family: var(--font-code); height: 34px; padding: 6px 10px }
+    .btn { padding: 8px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 600; transition: var(--transition) }
+    .btn-primary { background: var(--cyan); color: var(--bg) }
+    .btn-primary:hover { background: #33ddff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,212,255,.3) }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border) }
+    .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan) }
+    .btn-amber { background: var(--amber); color: var(--bg) }
+    .btn-amber:hover { background: #fbbf24; transform: translateY(-1px) }
+    .btn-sm { padding: 5px 10px; font-size: 12px; height: 34px }
+    .btn-icon { background: none; border: none; color: var(--text2); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px; height: 34px; display:flex; align-items:center; gap:4px }
+    .btn-icon:hover { color: var(--cyan); background: var(--bg3) }
+    .btn-icon.active { color: var(--amber) }
+    .github-link { color: var(--text2); transition: color .2s; display: flex; align-items: center }
+    .github-link:hover { color: var(--cyan) }
+
+    /* MAIN */
+    #main { display: flex; height: calc(100vh - 56px); overflow: hidden; transition: height .2s }
+    body.log-open #main { height: calc(100vh - 56px - 220px) }
+    body.log-open .toast-container { bottom: 240px }
+    .panel { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden }
+    .panel:last-child { border-right: none }
+    #panel1 { width: 280px; min-width: 220px; flex-shrink: 0 }
+    #panel2 { width: 300px; min-width: 260px; flex-shrink: 0 }
+    #panel3 { flex: 1; min-width: 380px }
+    .panel-header { padding: 12px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text2); border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0 }
+    .panel-body { flex: 1; overflow-y: auto; padding: 16px }
+
+    /* PANEL 1 */
+    .input-group { margin-bottom: 14px }
+    .input-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .3px }
+    .input-group input[type="text"] { width: 100%; font-size: 13px }
+    .input-row { display: flex; gap: 6px }
+    .input-row input { flex: 1 }
+    #analyzeBtn { width: 100%; margin-top: 8px; padding: 10px; font-size: 14px }
+    .status-area { margin-top: 14px; padding: 12px; background: var(--bg3); border-radius: var(--radius); border: 1px solid var(--border); display: none }
+    .status-area.visible { display: block }
+    .status-text { font-size: 12px; color: var(--text2); margin-bottom: 8px }
+    .progress-bar { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; margin-bottom: 10px }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--purple)); border-radius: 2px; transition: width .4s ease; width: 0 }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px }
+    .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(0,212,255,.12); color: var(--cyan); border: 1px solid rgba(0,212,255,.2) }
+    .badge.framework { background: rgba(188,140,255,.12); color: var(--purple); border-color: rgba(188,140,255,.2) }
+    .file-tree { margin-top: 12px; font-family: var(--font-code); font-size: 12px; line-height: 1.6 }
+    .tree-dir { cursor: pointer; color: var(--cyan); user-select: none }
+    .tree-dir::before { content: '▸ '; color: var(--text2) }
+    .tree-dir.open::before { content: '▾ ' }
+    .tree-children { padding-left: 16px; display: none }
+    .tree-children.open { display: block }
+    .tree-file { color: var(--text2); padding-left: 16px }
+    .tree-file::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--border); margin-right: 6px; vertical-align: middle }
+
+    /* Path hint */
+    .path-hint { font-size: 11px; color: var(--text2); margin-top: 4px; font-family: var(--font-code); background: var(--bg3); border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; display: none }
+    .path-hint.visible { display: block }
+    .path-example { color: var(--amber); font-size: 11px; margin-top: 3px }
+
+    /* Drag-drop zone */
+    .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 14px 10px; text-align: center; font-size: 12px; color: var(--text2); cursor: pointer; transition: var(--transition); margin-bottom: 8px; background: var(--bg3) }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,.05) }
+    .drop-zone .drop-icon { font-size: 22px; display: block; margin-bottom: 4px; opacity: .6 }
+
+    /* Token estimate bar */
+    .estimate-bar { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; margin-top: 8px; font-size: 12px; display: none }
+    .estimate-bar.visible { display: block }
+    .estimate-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px }
+    .estimate-label { color: var(--text2) }
+    .estimate-val { font-family: var(--font-code); color: var(--cyan); font-weight: 600 }
+    .estimate-costs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px }
+    .cost-tag { font-size: 10px; background: var(--bg4); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; color: var(--text2); font-family: var(--font-code) }
+
+    /* Cache status badge */
+    .cache-badge { display: none; align-items: center; gap: 6px; background: rgba(63,185,80,.08); border: 1px solid rgba(63,185,80,.2); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: #4ade80; margin-bottom: 10px }
+    .cache-badge.visible { display: flex }
+    .cache-badge .cache-path { font-family: var(--font-code); font-size: 10px; color: var(--text2); word-break: break-all; flex: 1 }
+
+    /* Scan settings panel */
+    .scan-settings { margin-top: 12px }
+    .scan-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text2); cursor: pointer; user-select: none; text-transform: uppercase; letter-spacing: .3px; padding: 5px 0; border-top: 1px solid var(--border) }
+    .scan-toggle .toggle-arrow { transition: transform .2s; font-size: 10px }
+    .scan-toggle.open .toggle-arrow { transform: rotate(90deg) }
+    .scan-fields { display: none; padding-top: 10px; display: none }
+    .scan-fields.open { display: block }
+    .scan-field { margin-bottom: 10px }
+    .scan-field label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 4px }
+    .scan-field label span { color: var(--cyan); font-family: var(--font-code) }
+    .scan-field input[type=range] { width: 100%; accent-color: var(--cyan) }
+    .scan-field input[type=text], .scan-field textarea { width: 100%; font-size: 12px }
+    .scan-field textarea { min-height: 52px; resize: vertical; font-family: var(--font-code) }
+    .scan-field .check-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); cursor: pointer }
+    .scan-field .check-row input { accent-color: var(--cyan) }
+    .scan-save-row { display: flex; gap: 6px; margin-top: 8px }
+    .scan-save-row button { flex: 1; padding: 6px; font-size: 12px }
+
+    /* PANEL 2 */
+    .file-group { margin-bottom: 16px }
+    .file-group-header { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px }
+    .file-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; margin-bottom: 2px; transition: var(--transition); cursor: pointer }
+    .file-item:hover { background: var(--bg3) }
+    .file-item input[type="checkbox"] { accent-color: var(--cyan); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0 }
+    .file-item .file-name { font-size: 13px; font-weight: 500; flex: 1 }
+    .file-item .file-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; flex-shrink: 0 }
+    .file-badge.rec { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.25) }
+    .file-badge.opt { background: rgba(139,148,158,.1); color: var(--text2); border: 1px solid rgba(139,148,158,.2) }
+    .file-badge.auto { background: rgba(245,158,11,.12); color: var(--amber); border: 1px solid rgba(245,158,11,.25) }
+    .tooltip { position: relative }
+    .tooltip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--bg4); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 11px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s; border: 1px solid var(--border); z-index: 10 }
+    .tooltip:hover::after { opacity: 1 }
+    .gen-controls { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border) }
+    .gen-controls select { width: 100%; margin-bottom: 10px; font-size: 13px }
+    #generateBtn { width: 100%; padding: 10px; font-size: 14px }
+    .gen-progress { margin-top: 10px; font-size: 12px; color: var(--text2) }
+    .gen-progress .step { padding: 3px 0; display: flex; align-items: center; gap: 6px }
+    .gen-progress .step .icon { font-size: 14px }
+
+    /* PANEL 3 */
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0 }
+    .tab-bar .tab { padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: var(--transition); background: none; border-top: none; border-left: none; border-right: none }
+    .tab-bar .tab.active { color: var(--cyan); border-bottom-color: var(--cyan) }
+    .tab-bar .tab:hover:not(.active) { color: var(--text) }
+    .tab-content { display: none; flex: 1; flex-direction: column; overflow: hidden }
+    .tab-content.active { display: flex }
+    .file-tabs { display: flex; gap: 2px; padding: 8px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-wrap: wrap; flex-shrink: 0 }
+    .file-tab { padding: 5px 12px; font-size: 12px; font-weight: 500; color: var(--text2); background: var(--bg3); border-radius: 6px; cursor: pointer; transition: var(--transition); border: 1px solid transparent }
+    .file-tab.active { color: var(--cyan); border-color: var(--cyan); background: rgba(0,212,255,.08) }
+    .file-tab:hover:not(.active) { color: var(--text); background: var(--bg4) }
+    .code-viewer { flex: 1; overflow: auto; padding: 16px; font-family: var(--font-code); font-size: 13px; line-height: 1.6; background: var(--bg) }
+    .code-viewer pre { margin: 0; white-space: pre-wrap; word-break: break-word }
+    .code-viewer pre code { background: transparent !important; padding: 0 !important }
+    .action-bar { display: flex; gap: 8px; padding: 10px 16px; background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0 }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text2); gap: 12px; padding: 40px; text-align: center }
+    .empty-state .icon { font-size: 48px; opacity: .4 }
+    .empty-state p { font-size: 14px; max-width: 300px; line-height: 1.5 }
+
+    /* PROMPT GENERATOR */
+    .prompt-gen { padding: 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; overflow-y: auto }
+    .prompt-gen label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 2px; display: block }
+    .prompt-gen textarea { width: 100%; min-height: 100px; resize: vertical; font-size: 13px; line-height: 1.5 }
+    .prompt-gen select { width: 100% }
+    .prompt-gen .row { display: flex; gap: 12px }
+    .prompt-gen .row > div { flex: 1 }
+    .prompt-gen .checks { display: flex; gap: 16px }
+    .prompt-gen .checks label { display: flex; align-items: center; gap: 6px; font-size: 13px; text-transform: none; letter-spacing: 0; cursor: pointer; color: var(--text) }
+    .prompt-gen .checks input { accent-color: var(--cyan) }
+    .prompt-output { flex: 1; min-height: 200px; font-family: var(--font-code); font-size: 13px; line-height: 1.6; resize: vertical }
+    .prompt-actions { display: flex; gap: 8px }
+    .prompt-guide { background: var(--bg); border-left: 3px solid var(--cyan); padding: 10px 14px; font-size: 13px; line-height: 1.6; color: var(--text2); border-radius: 0 6px 6px 0 }
+    .prompt-tabs { display: flex; gap: 4px; flex-wrap: wrap }
+    .prompt-tab { padding: 5px 12px; background: var(--bg4); border: 1px solid var(--border); color: var(--text2); border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 500; transition: var(--transition) }
+    .prompt-tab.active { background: rgba(0,212,255,.12); border-color: var(--cyan); color: var(--cyan) }
+    .prompt-tab:hover:not(.active) { color: var(--text); background: var(--bg3) }
+    .prompt-when { font-size: 12px; color: var(--amber) }
+    .prompt-mode-row { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap }
+    .prompt-mode-row > label:first-child { color: var(--text2); font-size: 13px; padding-top: 2px; text-transform: none; letter-spacing: 0 }
+    .radio-label { display: flex; flex-direction: column; gap: 2px; cursor: pointer; font-size: 13px; color: var(--text); text-transform: none; letter-spacing: 0 }
+    .radio-label input { margin-right: 6px; accent-color: var(--cyan) }
+    .mode-hint { font-size: 11px; color: var(--text2); padding-left: 18px }
+    .hidden { display: none !important }
+
+    /* CHAT */
+    .chat-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+    .chat-toolbar select { padding: 5px 10px; background: var(--bg4); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: 13px }
+    .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); cursor: pointer; text-transform: none; letter-spacing: 0 }
+    .toggle-label input { accent-color: var(--cyan) }
+    .chat-role-hint { font-size: 12px; color: var(--text2); background: var(--bg2); border-left: 3px solid var(--border); padding: 6px 10px; border-radius: 0 4px 4px 0 }
+    .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 200px; max-height: 420px }
+    .chat-msg { padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; position: relative; max-width: 92%; word-break: break-word }
+    .chat-msg-user { background: #1a3a5c; align-self: flex-end; color: var(--text) }
+    .chat-msg-assistant { background: var(--bg2); border: 1px solid var(--border); align-self: flex-start; color: var(--text) }
+    .chat-msg-error { border-color: var(--red) !important; color: var(--red) }
+    .chat-msg pre { background: #010409; border-radius: 6px; padding: 10px; overflow-x: auto; margin: 8px 0 }
+    .chat-msg code { font-family: var(--font-code); font-size: 12px }
+    .chat-msg strong { color: #f0f6fc }
+    .msg-copy-btn { position: absolute; top: 6px; right: 6px; padding: 2px 8px; background: var(--bg4); border: none; color: var(--text2); border-radius: 4px; cursor: pointer; font-size: 11px; opacity: 0; transition: opacity .2s }
+    .chat-msg:hover .msg-copy-btn { opacity: 1 }
+    .typing-dot { display: inline-block; width: 6px; height: 6px; background: var(--text2); border-radius: 50%; margin: 0 2px; animation: typing-bounce 1.2s infinite }
+    .typing-dot:nth-child(2) { animation-delay: .2s }
+    .typing-dot:nth-child(3) { animation-delay: .4s }
+    @keyframes typing-bounce { 0%,60%,100% { transform: translateY(0) } 30% { transform: translateY(-6px) } }
+    .chat-input-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 4px }
+    .chat-input-row textarea { flex: 1; resize: none }
+    #chatSendBtn { padding: 10px 18px; font-size: 14px }
+    #chatSendBtn:disabled { opacity: .4; cursor: not-allowed }
+    .chat-hint { font-size: 11px; color: var(--text2); text-align: right; margin-top: 2px }
+
+    /* DEBUG LOG PANEL */
+    #logPanel { position: fixed; bottom: 0; left: 0; right: 0; height: 220px; background: var(--bg); border-top: 2px solid var(--border); z-index: 900; display: flex; flex-direction: column; box-shadow: 0 -4px 20px rgba(0,0,0,.5); }
+    .log-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 12px; border-bottom: 1px solid var(--bg4); background: var(--bg2); flex-shrink: 0; }
+    .log-title { font-size: 12px; font-weight: 700; color: var(--text2); display: flex; align-items: center; gap: 6px }
+    .log-controls { display: flex; gap: 5px; align-items: center }
+    .log-controls select { padding: 2px 6px; background: var(--bg4); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; font-size: 11px; height: 26px }
+    .log-controls button { padding: 2px 8px; background: var(--bg4); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; font-size: 11px; cursor: pointer; height: 26px }
+    .log-controls button:hover { color: var(--cyan); border-color: var(--cyan) }
+    .log-entries { flex: 1; overflow-y: auto; padding: 4px 12px; font-family: var(--font-code); font-size: 11.5px }
+    .log-footer { display: flex; justify-content: space-between; align-items: center; padding: 3px 12px; font-size: 11px; color: var(--text2); border-top: 1px solid var(--bg4); background: var(--bg2); flex-shrink: 0 }
+    .log-entry { padding: 1px 0; line-height: 1.5 }
+    .log-entry .log-time { color: #484f58; margin-right: 6px }
+    .log-entry .log-cat { color: var(--purple); margin-right: 6px; font-size: 10px }
+    .log-info .log-msg { color: var(--text2) }
+    .log-success .log-msg { color: #4ade80 }
+    .log-warn .log-msg { color: var(--amber) }
+    .log-error .log-msg { color: #f87171 }
+    .log-entry details { display: inline }
+    .log-entry details summary { cursor: pointer; color: var(--text2); font-size: 10px; display: inline }
+    .log-entry details pre { background: var(--bg2); border: 1px solid var(--border); padding: 6px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; margin-top: 2px; font-size: 10.5px; color: #f87171 }
+    .log-token-badge { background: rgba(188,140,255,.15); color: var(--purple); border: 1px solid rgba(188,140,255,.25); padding: 1px 6px; border-radius: 10px; font-size: 10px; margin-left: 6px }
+    /* Client log entries have a different left accent */
+    .log-entry.log-client .log-cat { color: var(--cyan) }
+
+    /* TOAST */
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; transition: bottom .2s }
+    .toast { padding: 10px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; color: var(--text); background: var(--bg3); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: slideIn .3s ease; display: flex; align-items: center; gap: 8px; max-width: 360px }
+    .toast.success { border-color: var(--green); background: rgba(63,185,80,.1) }
+    .toast.error { border-color: var(--red); background: rgba(248,81,73,.1) }
+    .toast.warn { border-color: var(--amber); background: rgba(245,158,11,.1) }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+    @keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
+
+    /* SPINNER */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--cyan); border-radius: 50%; animation: spin .6s linear infinite }
+    @keyframes spin { to { transform: rotate(360deg) } }
+
+    /* API KEY GUIDE MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px }
+    .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 580px; max-height: 80vh; overflow-y: auto; padding: 28px; position: relative }
+    .modal h2 { font-size: 18px; font-weight: 700; color: var(--cyan); margin-bottom: 6px }
+    .modal .modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px }
+    .modal-close { position: absolute; top: 16px; right: 16px; background: var(--bg4); border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 13px }
+    .modal-close:hover { color: var(--cyan); border-color: var(--cyan) }
+    .provider-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px }
+    .provider-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px }
+    .provider-card p { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5 }
+    .provider-card a { color: var(--cyan); text-decoration: none; font-size: 12px; font-family: var(--font-code) }
+    .provider-card a:hover { text-decoration: underline }
+    .key-format { font-size: 11px; color: var(--purple); font-family: var(--font-code); background: var(--bg4); padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 4px }
+    .free-badge { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.25); font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600 }
+    .paid-badge { background: rgba(245,158,11,.12); color: var(--amber); border: 1px solid rgba(245,158,11,.25); font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600 }
+  </style>
+</head>
+<body>
+
+<!-- API KEY GUIDE MODAL -->
+<div class="modal-overlay hidden" id="apiGuideModal">
+  <div class="modal">
+    <button class="modal-close" onclick="$('apiGuideModal').classList.add('hidden')">✕ Close</button>
+    <h2>🔑 How to Get Your API Key</h2>
+    <p class="modal-sub">AgentForge supports multiple AI providers. Pick one below to get started — Gemini has a free tier.</p>
+
+    <div class="provider-card">
+      <h3>🟢 Google Gemini <span class="free-badge">FREE TIER</span></h3>
+      <p>Gemini 2.5 Flash is free and excellent for most tasks. Recommended for beginners.</p>
+      <p>1. Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
+         2. Sign in with Google account<br>
+         3. Click <strong>Create API Key</strong><br>
+         4. Copy key starting with <code>AIza...</code></p>
+      <span class="key-format">Format: AIzaSy...xxxx</span>
+    </div>
+
+    <div class="provider-card">
+      <h3>🟣 Anthropic Claude <span class="paid-badge">PAID</span></h3>
+      <p>Claude Sonnet/Haiku — powerful and great for code. Requires billing setup ($5 min).</p>
+      <p>1. Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
+         2. Create account → Settings → API Keys<br>
+         3. Click <strong>Create Key</strong><br>
+         4. Copy key starting with <code>sk-ant-...</code></p>
+      <span class="key-format">Format: sk-ant-api03-...xxxx</span>
+    </div>
+
+    <div class="provider-card">
+      <h3>🔵 OpenAI GPT <span class="paid-badge">PAID</span></h3>
+      <p>GPT-4o Mini is affordable. Requires credit card ($5 min).</p>
+      <p>1. Go to <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a><br>
+         2. Create account → Billing → Add payment<br>
+         3. API Keys → <strong>Create new secret key</strong></p>
+      <span class="key-format">Format: sk-proj-...xxxx</span>
+    </div>
+
+    <div class="provider-card">
+      <h3>⚫ xAI Grok <span class="paid-badge">PAID</span></h3>
+      <p>Fast and capable. Go to <a href="https://console.x.ai" target="_blank">console.x.ai</a> → API Keys.</p>
+      <span class="key-format">Format: xai-...xxxx</span>
+    </div>
+
+    <div class="provider-card">
+      <h3>🔷 DeepSeek <span class="paid-badge">PAID — Very Cheap</span></h3>
+      <p>Extremely affordable (~$0.001/1K tokens). Go to <a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a> → API Keys.</p>
+      <span class="key-format">Format: sk-...xxxx</span>
+    </div>
+
+    <div style="margin-top:16px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">
+      💡 <strong style="color:var(--text)">Tip:</strong> After entering your key in the header bar, click <strong>Save</strong> then <strong>Test</strong> to verify it works before analyzing a project.
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo"><span>🤖</span> AgentForge</div>
+  <div class="api-bar">
+    <select id="providerSelect" title="AI Provider">
+      <option value="gemini">🟢 Gemini</option>
+      <option value="claude">🟣 Claude</option>
+      <option value="openai">🔵 OpenAI</option>
+      <option value="grok">⚫ Grok</option>
+      <option value="deepseek">🔷 DeepSeek</option>
+    </select>
+    <select id="modelSelect" title="AI Model">
+      <option value="">Loading models...</option>
+    </select>
+    <div class="status-dot" id="apiDot" title="API Key status"></div>
+    <input type="password" id="apiKeyInput" placeholder="AIza... — click ? for guide" spellcheck="false" autocomplete="off">
+    <button class="btn btn-secondary btn-sm" id="saveKeyBtn" title="Save API key for this provider">Save</button>
+    <button class="btn btn-secondary btn-sm" id="testKeyBtn" title="Test API key">Test</button>
+    <button class="btn-icon" id="apiGuideBtn" title="How to get API key" style="font-size:18px;font-weight:700;color:var(--amber)">?</button>
+    <button class="btn-icon" id="toggleLogBtn" title="Toggle Debug Log">🐛 Log</button>
+    <a href="https://github.com/args0179" target="_blank" class="github-link" title="GitHub">
+      <svg height="22" width="22" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+    </a>
+  </div>
+</div>
+
+<!-- MAIN 3-PANEL LAYOUT -->
+<div id="main">
+  <!-- PANEL 1 -->
+  <div class="panel" id="panel1">
+    <div class="panel-header">&#128193; Project Input</div>
+    <div class="panel-body">
+
+      <!-- Cache status -->
+      <div class="cache-badge" id="cacheBadge">
+        <span>&#10003; Cached:</span>
+        <span class="cache-path" id="cachePath"></span>
+        <button onclick="clearCache()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:11px;flex-shrink:0" title="Clear cache">&#10005;</button>
+      </div>
+
+      <!-- Drag-drop zone -->
+      <div class="drop-zone" id="dropZone" title="Drag a folder here or click Browse">
+        <span class="drop-icon">&#128193;</span>
+        Drag &amp; drop a folder here<br>
+        <span style="font-size:11px;opacity:.7">or use Browse / type path below</span>
+      </div>
+
+      <div class="input-group" style="margin-bottom:8px">
+        <label>Folder path
+          <span style="color:var(--text2);font-weight:400;text-transform:none;margin-left:4px">(absolute path)</span>
+        </label>
+        <div class="input-row">
+          <input type="text" id="folderPath" placeholder="C:\Users\dev\my-project or /home/user/project">
+          <button class="btn btn-secondary btn-sm" id="browseBtn" title="Open OS folder picker">&#128193;</button>
+        </div>
+      </div>
+
+      <!-- Token estimate bar -->
+      <div class="estimate-bar" id="estimateBar">
+        <div class="estimate-row">
+          <span class="estimate-label">Files</span>
+          <span class="estimate-val" id="estFiles">--</span>
+        </div>
+        <div class="estimate-row">
+          <span class="estimate-label">Estimated tokens</span>
+          <span class="estimate-val" id="estTokens">--</span>
+        </div>
+        <div class="estimate-costs" id="estCosts"></div>
+      </div>
+
+      <button class="btn btn-primary" id="analyzeBtn" style="width:100%;margin-top:8px;padding:10px;font-size:14px">&#128269; Analyze Project</button>
+
+      <div class="status-area" id="statusArea">
+        <div class="status-text" id="statusText">Ready</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
+          <span id="fileCount"></span><span id="stackLabel"></span>
+        </div>
+        <div class="badge-row" id="badgeRow"></div>
+      </div>
+
+      <!-- Scan Settings (collapsible) -->
+      <div class="scan-settings">
+        <div class="scan-toggle" id="scanToggle" onclick="toggleScanSettings()">
+          <span class="toggle-arrow">&#9658;</span> &#9881; Scan Settings
+        </div>
+        <div class="scan-fields" id="scanFields">
+          <div class="scan-field">
+            <label>Max files to read <span id="lblMaxFiles">120</span></label>
+            <input type="range" id="cfgMaxFiles" min="20" max="300" step="10" value="120"
+              oninput="$('lblMaxFiles').textContent=this.value">
+          </div>
+          <div class="scan-field">
+            <label>Max file size (KB) <span id="lblMaxSize">500</span></label>
+            <input type="range" id="cfgMaxSize" min="50" max="2000" step="50" value="500"
+              oninput="$('lblMaxSize').textContent=this.value">
+          </div>
+          <div class="scan-field">
+            <label>Token budget <span id="lblTokenBudget">60,000</span></label>
+            <input type="range" id="cfgTokenBudget" min="10000" max="200000" step="5000" value="60000"
+              oninput="$('lblTokenBudget').textContent=Number(this.value).toLocaleString()">
+          </div>
+          <div class="scan-field">
+            <label>Max lines per file <span id="lblMaxLines">200</span></label>
+            <input type="range" id="cfgMaxLines" min="50" max="500" step="25" value="200"
+              oninput="$('lblMaxLines').textContent=this.value">
+          </div>
+          <div class="scan-field">
+            <label style="margin-bottom:4px">Extra exclude patterns (one per line)</label>
+            <textarea id="cfgExclude" placeholder="**/*.test.ts&#10;docs/**&#10;*.generated.js" style="font-size:11px;min-height:56px"></textarea>
+          </div>
+          <div class="scan-field">
+            <label class="check-row">
+              <input type="checkbox" id="cfgGitignore" checked>
+              Respect .gitignore
+            </label>
+          </div>
+          <div class="scan-save-row">
+            <button class="btn btn-secondary" onclick="saveScanConfig()">&#128190; Save</button>
+            <button class="btn btn-secondary" onclick="resetScanConfig()">&#8635; Reset</button>
+            <button class="btn btn-secondary" onclick="runEstimate()" title="Estimate tokens without AI">&#128202; Estimate</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="file-tree" id="fileTreeEl"></div>
+    </div>
+  </div>
+
+  <!-- PANEL 2 -->
+  <div class="panel" id="panel2">
+    <div class="panel-header">⚡ File Selection & Options</div>
+    <div class="panel-body">
+      <div id="fileSelectionArea"></div>
+      <div class="gen-controls">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block">GENERATION MODE</label>
+        <select id="genMode">
+          <option value="Full Generate">Full Generate</option>
+          <option value="Update Existing">Update Existing</option>
+          <option value="Minimal">Minimal</option>
+        </select>
+        <button class="btn btn-amber" id="generateBtn" disabled>⚡ Generate Files</button>
+        <div class="gen-progress" id="genProgress"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 3 -->
+  <div class="panel" id="panel3">
+    <div class="tab-bar" id="mainTabBar">
+      <button class="tab active" data-tab="preview">📄 Preview</button>
+      <button class="tab" data-tab="prompt">✨ Prompt Generator</button>
+      <button class="tab" data-tab="chat">💬 Chat</button>
+    </div>
+
+    <!-- Preview Tab -->
+    <div class="tab-content active" id="tab-preview">
+      <div class="file-tabs" id="fileTabs"></div>
+      <div class="code-viewer" id="codeViewer">
+        <div class="empty-state">
+          <div class="icon">📄</div>
+          <p>Generated files will appear here. Analyze a project and generate files to get started.</p>
+        </div>
+      </div>
+      <div class="action-bar" id="previewActions" style="display:none">
+        <button class="btn btn-secondary btn-sm" id="copyFileBtn">📋 Copy</button>
+        <button class="btn btn-secondary btn-sm" id="saveFileBtn">💾 Save This File</button>
+        <button class="btn btn-primary btn-sm" id="saveAllBtn">💾 Save All Files</button>
+      </div>
+    </div>
+
+    <!-- Prompt Generator Tab -->
+    <div class="tab-content" id="tab-prompt">
+      <div class="prompt-gen">
+        <div>
+          <label>Describe Your Task</label>
+          <textarea id="promptTask" placeholder="e.g., Refactor the auth module to use JWT instead of sessions"></textarea>
+        </div>
+        <div class="row">
+          <div><label>Target AI</label>
+            <select id="promptTarget">
+              <option>Claude</option><option>GitHub Copilot Agent</option>
+              <option>Cursor</option><option>Gemini</option><option>ChatGPT</option>
+            </select>
+          </div>
+          <div><label>Prompt Style</label>
+            <select id="promptStyle">
+              <option>Detailed</option><option>Concise</option>
+              <option>Chain-of-thought</option><option>Role-based</option>
+            </select>
+          </div>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="promptIncludeCtx" checked> Include project context</label>
+          <label><input type="checkbox" id="promptIncludeFiles"> Include generated files</label>
+        </div>
+        <div class="prompt-mode-row">
+          <label>Output mode:</label>
+          <label class="radio-label">
+            <span><input type="radio" name="prompt-mode" value="single"> Single prompt</span>
+            <span class="mode-hint">One complete prompt, copy-paste ready</span>
+          </label>
+          <label class="radio-label">
+            <span><input type="radio" name="prompt-mode" value="multi" checked> Split into files</span>
+            <span class="mode-hint">Multiple focused prompts + usage guide</span>
+          </label>
+        </div>
+        <button class="btn btn-primary" id="genPromptBtn">✨ Generate Prompt</button>
+        <div id="promptGuide" class="prompt-guide hidden"></div>
+        <div id="promptTabs" class="prompt-tabs hidden"></div>
+        <div id="promptWhen" class="prompt-when hidden"></div>
+        <div>
+          <label>Generated Prompt</label>
+          <textarea class="prompt-output" id="promptContent" readonly placeholder="Your generated prompts will appear here..."></textarea>
+        </div>
+        <div class="prompt-actions">
+          <button class="btn btn-secondary btn-sm" id="copyPromptBtn">📋 Copy</button>
+          <button class="btn btn-secondary btn-sm" id="savePromptBtn">💾 Save This</button>
+          <button class="btn btn-primary btn-sm hidden" id="saveAllPromptsBtn">💾 Save All</button>
+          <button class="btn btn-secondary btn-sm" id="resetPromptBtn">🔄 Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Tab -->
+    <div class="tab-content" id="tab-chat">
+      <div class="prompt-gen">
+        <div class="chat-toolbar">
+          <select id="chatRole">
+            <option value="Context Engineer">🧠 Context Engineer</option>
+            <option value="Code Reviewer">🔍 Code Reviewer</option>
+            <option value="Architect">🏗 Architect</option>
+            <option value="Debug Assistant">🐛 Debug Assistant</option>
+            <option value="Docs Writer">📝 Docs Writer</option>
+          </select>
+          <label class="toggle-label"><input type="checkbox" id="chatUseContext" checked> Include project context</label>
+          <button class="btn btn-secondary btn-sm" id="chatClearBtn">Clear</button>
+        </div>
+        <div id="chatRoleHint" class="chat-role-hint"></div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="Ask about your project..." rows="3"></textarea>
+          <button class="btn btn-primary" id="chatSendBtn">Send ↑</button>
+        </div>
+        <div class="chat-hint">Enter to send · Shift+Enter for new line</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DEBUG LOG PANEL -->
+<div id="logPanel" class="hidden">
+  <div class="log-header">
+    <div class="log-title">🐛 Debug Log
+      <span id="logCount" style="font-size:10px;color:var(--purple)"></span>
+      <span id="logTokenTotal" class="log-token-badge hidden"></span>
+    </div>
+    <div class="log-controls">
+      <select id="logLevelFilter">
+        <option value="">All Levels</option>
+        <option value="info">Info</option>
+        <option value="success">Success</option>
+        <option value="warn">Warning</option>
+        <option value="error">Error only</option>
+      </select>
+      <select id="logCatFilter">
+        <option value="">All Categories</option>
+        <option value="ui">ui</option>
+        <option value="auth">auth</option>
+        <option value="file-reader">file-reader</option>
+        <option value="analyzer">analyzer</option>
+        <option value="generator">generator</option>
+        <option value="chat">chat</option>
+        <option value="save">save</option>
+      </select>
+      <button id="logAutoScrollBtn" title="Auto-scroll" style="background:rgba(0,212,255,.1);border-color:var(--cyan);color:var(--cyan)">⬇ Auto</button>
+      <button id="logClearBtn">🗑 Clear</button>
+      <button id="closeLogBtn">✕</button>
+    </div>
+  </div>
+  <div class="log-entries" id="logEntries"></div>
+  <div class="log-footer">
+    <span id="logStatus">Waiting for activity...</span>
+    <span id="logTokenInfo" style="font-family:var(--font-code);color:var(--purple)"></span>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let apiKeys = {};
+let currentProvider = 'gemini';
+let projectAnalysis = null;
+let generatedFiles = {};
+let currentPreviewFile = null;
+let currentPrompts = [];
+let currentPromptIndex = 0;
+let chatHistory = [];
+let logAutoScroll = true;
+let logLastId = 0;
+let logPollInterval = null;
+let totalTokensIn = 0;
+let totalTokensOut = 0;
+let providerData = null;
+
+const KEY_PLACEHOLDERS = {
+  gemini:   'AIza... — aistudio.google.com/apikey (Free!)',
+  claude:   'sk-ant-... — console.anthropic.com',
+  openai:   'sk-... — platform.openai.com/api-keys',
+  grok:     'xai-... — console.x.ai',
+  deepseek: 'sk-... — platform.deepseek.com'
+};
+
+const PROVIDER_LABELS = {
+  gemini: 'Google AI Studio', claude: 'Anthropic Console',
+  openai: 'OpenAI Platform', grok: 'xAI Console', deepseek: 'DeepSeek Platform'
+};
+
+const FILE_GROUPS = [
+  { title: '🤖 AI Agent Files', items: [
+    { id: 'AGENTS.md',       label: 'AGENTS.md',       tip: 'GitHub Copilot agents definition', badge: 'rec', checked: true },
+    { id: 'CLAUDE.md',       label: 'CLAUDE.md',       tip: 'Claude project instructions',      badge: 'rec', checked: true },
+    { id: '.cursorrules',    label: '.cursorrules',    tip: 'Cursor IDE rules',                 badge: 'rec', checked: true },
+    { id: '.windsurfrules',  label: '.windsurfrules',  tip: 'Windsurf IDE rules',              badge: 'opt', checked: false }
+  ]},
+  { title: '📋 Rules & Memory', items: [
+    { id: 'base-rules.md', label: 'base-rules.md', tip: 'Core coding rules for this project',             badge: 'rec', checked: true },
+    { id: 'memories.md',   label: 'memories.md',   tip: 'Key decisions & architecture notes for AI memory', badge: 'rec', checked: true },
+    { id: 'SKILL.md',      label: 'SKILL.md',      tip: 'Agent skill definition (repomix-style)',          badge: 'rec', checked: true }
+  ]},
+  { title: '📦 Package Files', items: [
+    { id: 'package.json',        label: 'package.json',        tip: 'Update/generate with proper metadata',        badge: 'opt',  checked: false },
+    { id: 'Dockerfile',          label: 'Dockerfile',          tip: 'Auto-detect if project needs Docker',         badge: 'auto', checked: false },
+    { id: 'docker-compose.yml',  label: 'docker-compose.yml',  tip: 'Auto-detect if project needs Docker Compose', badge: 'auto', checked: false }
+  ]},
+  { title: '📚 Documentation', items: [
+    { id: 'README.md',          label: 'README.md',          tip: 'Project README',             badge: 'rec', checked: true },
+    { id: 'CONTRIBUTING.md',    label: 'CONTRIBUTING.md',    tip: 'Contribution guidelines',    badge: 'opt', checked: false },
+    { id: 'CODE_OF_CONDUCT.md', label: 'CODE_OF_CONDUCT.md', tip: 'Community code of conduct',  badge: 'opt', checked: false },
+    { id: 'SECURITY.md',        label: 'SECURITY.md',        tip: 'Security policy',            badge: 'opt', checked: false },
+    { id: 'CHANGELOG.md',       label: 'CHANGELOG.md',       tip: 'Changelog',                 badge: 'opt', checked: false }
+  ]}
+];
+const BADGE_LABELS = { rec: 'Recommended', opt: 'Optional', auto: 'Auto-detect' };
+
+const ROLE_HINTS = {
+  'Context Engineer': 'Ask about project structure, what files to generate, how to improve AI agent config.',
+  'Code Reviewer':    'Paste code or ask to review a specific file. Gets specific file/line feedback.',
+  'Architect':        'Ask about design decisions, scalability concerns, how to restructure modules.',
+  'Debug Assistant':  'Describe a bug or error. Gets systematic root cause analysis.',
+  'Docs Writer':      'Ask to document a function, module, or generate README sections.'
+};
+
+// ══════════════════════════════════════════
+// UTILITY
+// ══════════════════════════════════════════
+function $(id) { return document.getElementById(id); }
+
+function toast(msg, type = 'success', duration = 3500) {
+  const icon = type === 'success' ? '✅' : type === 'warn' ? '⚠️' : '❌';
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `${icon} <span>${escHtml(msg)}</span>`;
+  $('toasts').appendChild(el);
+  setTimeout(() => { el.style.animation = 'fadeOut .3s ease forwards'; setTimeout(() => el.remove(), 300); }, duration);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function smartError(raw) {
+  if (!raw) return 'Unknown error';
+  const s = String(raw);
+  if (s.includes('RESOURCE_EXHAUSTED') || s.includes('quota') || s.includes('429'))
+    return 'API quota / rate limit exceeded. Try a cheaper model or wait a moment.';
+  if (s.includes('API_KEY_INVALID') || s.includes('401') || s.includes('Unauthorized') || s.includes('invalid x-api-key'))
+    return 'Invalid API key. Check the key for ' + PROVIDER_LABELS[currentProvider] + '.';
+  if (s.includes('403') || s.includes('Forbidden') || s.includes('permission'))
+    return 'Access denied. Your API key may not have permission for this model.';
+  if (s.includes('404') || s.includes('not found') || s.includes('model'))
+    return 'Model not found. Try a different model for ' + currentProvider + '.';
+  if (s.includes('ECONNREFUSED') || s.includes('fetch failed') || s.includes('ENOTFOUND'))
+    return 'Cannot connect to server. Is AgentForge running on port 3456?';
+  if (s.includes('billing') || s.includes('payment') || s.includes('insufficient'))
+    return 'Billing issue. Enable billing or upgrade your plan for this model.';
+  const line = s.split('\n').find(l => l.trim().length > 10) || s;
+  return line.slice(0, 150);
+}
+
+// ══════════════════════════════════════════
+// CLIENT LOG — logs events from the browser UI into the debug panel
+// These are client-side only; they appear immediately without polling.
+// ══════════════════════════════════════════
+function clientLog(level, category, message, data) {
+  // Render immediately into the log panel
+  const div = document.createElement('div');
+  div.className = `log-entry log-${level} log-client`;
+  div.dataset.level = level;
+  div.dataset.cat = category;
+
+  const levelFilter = $('logLevelFilter') ? $('logLevelFilter').value : '';
+  const catFilter = $('logCatFilter') ? $('logCatFilter').value : '';
+  if (levelFilter && level !== levelFilter) return;
+  if (catFilter && category !== catFilter) return;
+
+  const now = new Date();
+  const time = now.toLocaleTimeString('en', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const msg = escHtml(String(message));
+
+  if (level === 'error' && data) {
+    div.innerHTML = `<span class="log-time">${time}</span><span class="log-cat">[${category}]</span><span class="log-msg">${msg} <details><summary>▶ details</summary><pre>${escHtml(String(data))}</pre></details></span>`;
+  } else {
+    const extra = data ? ` <span style="color:#484f58;font-size:10px">${escHtml(String(data).slice(0,80))}</span>` : '';
+    div.innerHTML = `<span class="log-time">${time}</span><span class="log-cat">[${category}]</span><span class="log-msg">${msg}${extra}</span>`;
+  }
+
+  const entries = $('logEntries');
+  if (entries) {
+    entries.appendChild(div);
+    if (logAutoScroll) entries.scrollTop = entries.scrollHeight;
+  }
+
+  // Also update count
+  const countEl = $('logCount');
+  if (countEl) {
+    const current = parseInt(countEl.textContent.replace(/\D/g,'')) || 0;
+    countEl.textContent = `(${current + 1})`;
+  }
+}
+
+// ══════════════════════════════════════════
+// KEY MANAGEMENT
+// ══════════════════════════════════════════
+function loadAllKeys() {
+  ['gemini','claude','openai','grok','deepseek'].forEach(p => {
+    const k = localStorage.getItem(`agentforge_key_${p}`) || '';
+    if (k) apiKeys[p] = k;
+  });
+  const old = localStorage.getItem('agentforge_apikey') || localStorage.getItem('geminiApiKey') || '';
+  if (old && !apiKeys.gemini) {
+    apiKeys.gemini = old;
+    localStorage.setItem('agentforge_key_gemini', old);
+  }
+}
+
+function getActiveKey() { return apiKeys[currentProvider] || ''; }
+
+function saveProviderKey(provider, key) {
+  apiKeys[provider] = key;
+  localStorage.setItem(`agentforge_key_${provider}`, key);
+}
+
+function updateKeyUI() {
+  const k = getActiveKey();
+  $('apiKeyInput').placeholder = KEY_PLACEHOLDERS[currentProvider] || 'API Key';
+  $('apiKeyInput').value = k ? '●'.repeat(Math.min(k.length, 24)) : '';
+  $('apiDot').classList.toggle('ok', !!k);
+  $('apiDot').title = k ? `${PROVIDER_LABELS[currentProvider]} — key saved` : 'No API key saved for ' + currentProvider;
+}
+
+// ══════════════════════════════════════════
+// PROVIDER / MODEL
+// ══════════════════════════════════════════
+async function loadProviderData() {
+  try {
+    const res = await fetch('/api/providers');
+    providerData = await res.json();
+    populateModelSelect(currentProvider);
+  } catch (e) {
+    populateModelSelect(currentProvider);
+  }
+}
+
+function onProviderChange() {
+  currentProvider = $('providerSelect').value;
+  populateModelSelect(currentProvider);
+  updateKeyUI();
+}
+
+function populateModelSelect(provider) {
+  const sel = $('modelSelect');
+  const models = providerData?.modelSuggestions?.[provider] || [];
+  if (!models.length) { sel.innerHTML = `<option value="">No models available</option>`; return; }
+  sel.innerHTML = '';
+  const tiers = { free: [], paid: [], preview: [] };
+  models.forEach(m => { const t = m.tier || 'paid'; if (!tiers[t]) tiers[t] = []; tiers[t].push(m); });
+  const tierLabels = { free: '🟢 Free Tier', paid: '🟡 Paid', preview: '🟣 Preview' };
+  let firstOpt = null;
+  ['free','paid','preview'].forEach(tier => {
+    if (!tiers[tier] || !tiers[tier].length) return;
+    const group = document.createElement('optgroup');
+    group.label = tierLabels[tier];
+    tiers[tier].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = `${m.label}${m.note ? ' — ' + m.note : ''}`;
+      if (m.tier === 'free') opt.style.color = '#4ade80';
+      if (m.tier === 'paid') opt.style.color = '#f59e0b';
+      if (m.tier === 'preview') opt.style.color = '#bc8cff';
+      group.appendChild(opt);
+      if (!firstOpt) firstOpt = opt;
+    });
+    sel.appendChild(group);
+  });
+  const defaultModel = providerData?.defaultModels?.[provider];
+  if (defaultModel) { sel.value = defaultModel; if (!sel.value) sel.selectedIndex = 0; }
+  else sel.selectedIndex = 0;
+}
+
+// ══════════════════════════════════════════
+// DEBUG LOG (server-side log polling)
+// ══════════════════════════════════════════
+function toggleLogPanel() {
+  const panel = $('logPanel');
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  document.body.classList.toggle('log-open', isHidden);
+  $('toggleLogBtn').classList.toggle('active', isHidden);
+  if (isHidden) { startLogPoll(); } else { stopLogPoll(); }
+}
+
+function startLogPoll() {
+  if (logPollInterval) return;
+  logPollInterval = setInterval(fetchLogs, 1500);
+  fetchLogs();
+}
+
+function stopLogPoll() {
+  if (logPollInterval) { clearInterval(logPollInterval); logPollInterval = null; }
+}
+
+async function fetchLogs() {
+  try {
+    const res = await fetch(`/api/logs?since=${logLastId}`);
+    const data = await res.json();
+    if (data.logs && data.logs.length) {
+      data.logs.forEach(renderLogEntry);
+      logLastId = Math.max(...data.logs.map(l => l.id));
+      $('logCount').textContent = `(${data.total})`;
+      $('logStatus').textContent = `${data.total} entries`;
+      data.logs.forEach(l => {
+        if (l.data) {
+          try {
+            const d = JSON.parse(l.data);
+            if (d.tokens) { totalTokensIn += d.tokens.input || 0; totalTokensOut += d.tokens.output || 0; }
+          } catch {}
+        }
+      });
+      if (totalTokensIn || totalTokensOut) {
+        $('logTokenInfo').textContent = `↑${totalTokensIn.toLocaleString()} ↓${totalTokensOut.toLocaleString()} tokens`;
+        $('logTokenTotal').textContent = `~${(totalTokensIn + totalTokensOut).toLocaleString()} tokens`;
+        $('logTokenTotal').classList.remove('hidden');
+      }
+      if (logAutoScroll) { const e = $('logEntries'); e.scrollTop = e.scrollHeight; }
+    }
+  } catch {}
+}
+
+function renderLogEntry(log) {
+  const levelFilter = $('logLevelFilter').value;
+  const catFilter = $('logCatFilter').value;
+  if (levelFilter && log.level !== levelFilter) return;
+  if (catFilter && log.category !== catFilter) return;
+  const div = document.createElement('div');
+  div.className = `log-entry log-${log.level}`;
+  div.dataset.level = log.level;
+  div.dataset.cat = log.category;
+  const time = new Date(log.timestamp).toLocaleTimeString('en', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const msg = escHtml(log.message);
+  if (log.level === 'error' && log.data) {
+    div.innerHTML = `<span class="log-time">${time}</span><span class="log-cat">[${log.category}]</span><span class="log-msg">${msg} <details><summary>▶ details</summary><pre>${escHtml(log.data)}</pre></details></span>`;
+  } else {
+    const extra = log.data ? ` <span style="color:#484f58;font-size:10px">${escHtml(log.data.slice(0,80))}</span>` : '';
+    div.innerHTML = `<span class="log-time">${time}</span><span class="log-cat">[${log.category}]</span><span class="log-msg">${msg}${extra}</span>`;
+  }
+  $('logEntries').appendChild(div);
+}
+
+function clearLog() {
+  fetch('/api/logs', { method: 'DELETE' });
+  $('logEntries').innerHTML = '';
+  logLastId = 0; totalTokensIn = 0; totalTokensOut = 0;
+  $('logTokenTotal').classList.add('hidden');
+  $('logTokenInfo').textContent = '';
+  $('logCount').textContent = '';
+  $('logStatus').textContent = 'Cleared.';
+}
+
+function refilterLog() {
+  logLastId = 0;
+  $('logEntries').innerHTML = '';
+  fetchLogs();
+}
+
+// ══════════════════════════════════════════
+// RENDER FILE SELECTION
+// ══════════════════════════════════════════
+function renderFileSelection() {
+  const area = $('fileSelectionArea');
+  area.innerHTML = '';
+  for (const group of FILE_GROUPS) {
+    const g = document.createElement('div');
+    g.className = 'file-group';
+    g.innerHTML = `<div class="file-group-header">${group.title}</div>`;
+    for (const item of group.items) {
+      const row = document.createElement('div');
+      row.className = 'file-item tooltip';
+      row.setAttribute('data-tip', item.tip);
+      row.innerHTML = `<input type="checkbox" id="chk-${item.id}" ${item.checked ? 'checked' : ''} data-file-id="${item.id}"><span class="file-name">${item.label}</span><span class="file-badge ${item.badge}">${BADGE_LABELS[item.badge]}</span>`;
+      row.addEventListener('click', e => { if (e.target.tagName !== 'INPUT') { const cb = row.querySelector('input'); cb.checked = !cb.checked; } });
+      g.appendChild(row);
+    }
+    area.appendChild(g);
+  }
+}
+
+// ══════════════════════════════════════════
+// FILE TREE
+// ══════════════════════════════════════════
+function renderTree(nodes, container) {
+  for (const node of nodes) {
+    if (node.type === 'directory') {
+      const dir = document.createElement('div');
+      dir.className = 'tree-dir';
+      dir.textContent = node.name + '/';
+      const children = document.createElement('div');
+      children.className = 'tree-children';
+      dir.addEventListener('click', e => { e.stopPropagation(); dir.classList.toggle('open'); children.classList.toggle('open'); });
+      renderTree(node.children || [], children);
+      container.appendChild(dir);
+      container.appendChild(children);
+    } else {
+      const file = document.createElement('div');
+      file.className = 'tree-file';
+      file.textContent = node.name;
+      container.appendChild(file);
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// SETUP LISTENERS
+// ══════════════════════════════════════════
+function setupListeners() {
+  $('providerSelect').addEventListener('change', onProviderChange);
+
+  $('apiKeyInput').addEventListener('focus', () => { $('apiKeyInput').value = getActiveKey() || ''; });
+  $('apiKeyInput').addEventListener('blur', () => { updateKeyUI(); });
+  $('saveKeyBtn').addEventListener('mousedown', (e) => {
+    e.preventDefault(); 
+  });
+  $('saveKeyBtn').addEventListener('click', () => {
+    const val = $('apiKeyInput').value.trim();
+    if (val && !val.startsWith('●') && val.length > 8) {
+      saveProviderKey(currentProvider, val);
+      updateKeyUI();
+      clientLog('success', 'auth', `API key saved for ${PROVIDER_LABELS[currentProvider]}`);
+      toast(`API key saved for ${PROVIDER_LABELS[currentProvider]}`);
+    } else if (!val || val.startsWith('●')) {
+      clientLog('warn', 'auth', 'Save key attempted — no new key typed');
+      toast('Type a new API key first', 'error');
+    } else {
+      clientLog('warn', 'auth', `Save key attempted — key too short (${val.length} chars)`);
+      toast('Key too short — check it', 'error');
+    }
+  });
+
+  $('testKeyBtn').addEventListener('click', async () => {
+    const key = getActiveKey();
+    if (!key) { clientLog('warn', 'auth', `Test key: no key saved for ${currentProvider}`); toast('No API key saved for ' + currentProvider, 'error'); return; }
+    $('testKeyBtn').disabled = true;
+    $('testKeyBtn').innerHTML = '<span class="spinner"></span>';
+    try {
+      const res = await fetch('/api/validate-key', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key, provider: currentProvider, modelName: $('modelSelect').value })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        $('apiDot').classList.add('ok');
+        clientLog('success', 'auth', `API key valid ✓ [${currentProvider}] model: ${$('modelSelect').value}`);
+        toast(`✓ API key valid for ${PROVIDER_LABELS[currentProvider]}`);
+      } else {
+        $('apiDot').classList.remove('ok');
+        toast(smartError(data.error), 'error');
+      }
+    } catch (e) { toast(smartError(e.message), 'error'); }
+    finally { $('testKeyBtn').disabled = false; $('testKeyBtn').textContent = 'Test'; }
+  });
+
+  // API Guide button
+  $('apiGuideBtn').addEventListener('click', () => {
+    $('apiGuideModal').classList.remove('hidden');
+    clientLog('info', 'ui', 'Opened API key guide');
+  });
+  // Close modal on overlay click
+  $('apiGuideModal').addEventListener('click', e => {
+    if (e.target === $('apiGuideModal')) $('apiGuideModal').classList.add('hidden');
+  });
+
+  // Browse — improved UX: detect folder name and show path hint
+  $('browseBtn').addEventListener('click', triggerBrowse);
+
+  // Hide estimate bar when path is cleared
+  $('folderPath').addEventListener('input', () => {
+    const val = $('folderPath').value.trim();
+    if (!val) $('estimateBar').classList.remove('visible');
+  });
+
+  $('analyzeBtn').addEventListener('click', analyzeProject);
+  $('generateBtn').addEventListener('click', generateFiles);
+
+  $('mainTabBar').querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $('mainTabBar').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#panel3 .tab-content').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  $('copyFileBtn').addEventListener('click', () => {
+    if (currentPreviewFile && generatedFiles[currentPreviewFile]) {
+      navigator.clipboard.writeText(generatedFiles[currentPreviewFile]);
+      toast('Copied to clipboard');
+    }
+  });
+  $('saveFileBtn').addEventListener('click', saveSingleFile);
+  $('saveAllBtn').addEventListener('click', saveAllFiles);
+
+  $('genPromptBtn').addEventListener('click', handleGeneratePrompt);
+  $('copyPromptBtn').addEventListener('click', copyPrompt);
+  $('savePromptBtn').addEventListener('click', saveCurrentPrompt);
+  $('saveAllPromptsBtn').addEventListener('click', saveAllPrompts);
+  $('resetPromptBtn').addEventListener('click', resetPromptGenerator);
+
+  $('chatRole').addEventListener('change', () => {
+    $('chatRoleHint').textContent = ROLE_HINTS[$('chatRole').value] || '';
+    chatHistory = []; $('chatMessages').innerHTML = '';
+  });
+  $('chatClearBtn').addEventListener('click', () => { chatHistory = []; $('chatMessages').innerHTML = ''; });
+  $('chatSendBtn').addEventListener('click', sendChat);
+  $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+  $('chatRoleHint').textContent = ROLE_HINTS[$('chatRole').value] || '';
+
+  $('toggleLogBtn').addEventListener('click', toggleLogPanel);
+  $('closeLogBtn').addEventListener('click', toggleLogPanel);
+  $('logClearBtn').addEventListener('click', clearLog);
+  $('logAutoScrollBtn').addEventListener('click', () => {
+    logAutoScroll = !logAutoScroll;
+    $('logAutoScrollBtn').style.background = logAutoScroll ? 'rgba(0,212,255,.1)' : 'var(--bg4)';
+    $('logAutoScrollBtn').style.color = logAutoScroll ? 'var(--cyan)' : 'var(--text2)';
+  });
+  $('logLevelFilter').addEventListener('change', refilterLog);
+  $('logCatFilter').addEventListener('change', refilterLog);
+}
+
+// ══════════════════════════════════════════
+// ANALYZE
+// ══════════════════════════════════════════
+async function analyzeProject() {
+  const folderPath = $('folderPath').value.trim();
+  if (!folderPath) {
+    clientLog('warn', 'ui', 'Analyze clicked — no folder path entered');
+    toast('Enter a folder path', 'error'); return;
+  }
+  const apiKey = getActiveKey();
+  if (!apiKey) {
+    clientLog('warn', 'auth', `Analyze clicked — no API key for ${currentProvider}`);
+    toast(`Enter your API key for ${PROVIDER_LABELS[currentProvider]} first`, 'error');
+    // Show guide
+    $('apiGuideModal').classList.remove('hidden');
+    return;
+  }
+
+  const btn = $('analyzeBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+  $('statusArea').classList.add('visible');
+  $('statusText').textContent = 'Scanning project files...';
+  $('progressFill').style.width = '30%';
+  clientLog('info', 'ui', `Analyze started: ${folderPath} [${currentProvider}/${$('modelSelect').value}]`);
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, apiKey, modelName: $('modelSelect').value, provider: currentProvider })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    projectAnalysis = data;
+    $('progressFill').style.width = '100%';
+    $('statusText').textContent = '✅ Analysis complete!';
+    $('fileCount').textContent = `${data.totalFiles} files`;
+    $('stackLabel').textContent = data.detectedStack?.slice(0,4).join(', ') || '';
+
+    const badgeRow = $('badgeRow');
+    badgeRow.innerHTML = '';
+    for (const tech of (data.detectedStack || [])) {
+      const b = document.createElement('span');
+      b.className = 'badge' + (data.frameworks?.includes(tech) ? ' framework' : '');
+      b.textContent = tech; badgeRow.appendChild(b);
+    }
+
+    $('fileTreeEl').innerHTML = '';
+    renderTree(data.fileTree || [], $('fileTreeEl'));
+    $('generateBtn').disabled = false;
+    clientLog('success', 'analyzer', `Analysis done — ${data.totalFiles} files, stack: ${data.detectedStack?.join(', ')}`);
+    toast('Project analyzed successfully');
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'analyzer', msg, err.message);
+    toast(msg, 'error');
+    $('statusText').textContent = '❌ ' + msg;
+    $('progressFill').style.width = '0';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '🔍 Analyze Project';
+  }
+}
+
+// ══════════════════════════════════════════
+// GENERATE
+// ══════════════════════════════════════════
+async function generateFiles() {
+  const apiKey = getActiveKey();
+  if (!apiKey) { clientLog('warn', 'auth', `Generate clicked — no API key for ${currentProvider}`); toast(`No API key for ${PROVIDER_LABELS[currentProvider]}`, 'error'); return; }
+  if (!projectAnalysis) { clientLog('warn', 'ui', 'Generate clicked — no project analyzed yet'); toast('Analyze a project first', 'error'); return; }
+  const selected = [];
+  document.querySelectorAll('[data-file-id]').forEach(cb => { if (cb.checked) selected.push(cb.dataset.fileId); });
+  if (!selected.length) { clientLog('warn', 'ui', 'Generate clicked — no files selected'); toast('Select at least one file', 'error'); return; }
+
+  const btn = $('generateBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating...';
+  const progress = $('genProgress');
+  progress.innerHTML = '';
+  generatedFiles = {};
+  clientLog('info', 'generator', `Generating ${selected.length} files: ${selected.join(', ')} [${currentProvider}/${$('modelSelect').value}]`);
+
+  for (let i = 0; i < selected.length; i++) {
+    const step = document.createElement('div');
+    step.className = 'step'; step.id = `gen-step-${i}`;
+    step.innerHTML = `<span class="icon">⏳</span> <span>${selected[i]}</span>`;
+    progress.appendChild(step);
+  }
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selectedFiles: selected, mode: $('genMode').value, apiKey, modelName: $('modelSelect').value, provider: currentProvider })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    generatedFiles = data.files || {};
+    for (let i = 0; i < selected.length; i++) {
+      const step = $(`gen-step-${i}`);
+      step.querySelector('.icon').textContent = generatedFiles[selected[i]] ? '✅' : '❌';
+    }
+    if (data.errors?.length) { data.errors.forEach(e => toast(`${e.file}: ${smartError(e.error)}`, 'error')); }
+
+    renderPreviewTabs();
+    const genCount = Object.keys(generatedFiles).length;
+    clientLog('success', 'generator', `Generated ${genCount}/${selected.length} files successfully`);
+    toast(`Generated ${genCount} file(s)`);
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'generator', msg, err.message);
+    toast(msg, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '⚡ Generate Files';
+  }
+}
+
+// ══════════════════════════════════════════
+// PREVIEW TABS
+// ══════════════════════════════════════════
+function renderPreviewTabs() {
+  const tabs = $('fileTabs');
+  tabs.innerHTML = '';
+  const names = Object.keys(generatedFiles);
+  if (!names.length) return;
+  for (const name of names) {
+    const tab = document.createElement('div');
+    tab.className = 'file-tab';
+    tab.textContent = name;
+    tab.addEventListener('click', () => showPreview(name));
+    tabs.appendChild(tab);
+  }
+  showPreview(names[0]);
+  $('previewActions').style.display = 'flex';
+  $('mainTabBar').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#panel3 .tab-content').forEach(t => t.classList.remove('active'));
+  $('mainTabBar').querySelector('[data-tab="preview"]').classList.add('active');
+  $('tab-preview').classList.add('active');
+}
+
+function showPreview(fileName) {
+  currentPreviewFile = fileName;
+  document.querySelectorAll('.file-tab').forEach(t => t.classList.toggle('active', t.textContent === fileName));
+  const viewer = $('codeViewer');
+  const content = generatedFiles[fileName] || '';
+  const lang = fileName.endsWith('.json') ? 'json' : fileName.endsWith('.yml') || fileName.endsWith('.yaml') ? 'yaml' : fileName === 'Dockerfile' ? 'dockerfile' : 'markdown';
+  viewer.innerHTML = `<pre><code class="language-${lang}"></code></pre>`;
+  viewer.querySelector('code').textContent = content;
+  hljs.highlightElement(viewer.querySelector('code'));
+}
+
+// ══════════════════════════════════════════
+// SAVE
+// ══════════════════════════════════════════
+async function saveSingleFile() {
+  if (!currentPreviewFile || !generatedFiles[currentPreviewFile]) return;
+  const folderPath = $('folderPath').value.trim();
+  if (!folderPath) { clientLog('warn', 'ui', 'Save file — no folder path set'); toast('No folder path set', 'error'); return; }
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, files: { [currentPreviewFile]: generatedFiles[currentPreviewFile] } })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    clientLog('success', 'save', `Saved: ${currentPreviewFile} → ${folderPath}`);
+    toast(`Saved ${currentPreviewFile}`);
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'save', msg, err.message);
+    toast(msg, 'error');
+  }
+}
+
+async function saveAllFiles() {
+  const folderPath = $('folderPath').value.trim();
+  if (!folderPath) { clientLog('warn', 'ui', 'Save all — no folder path set'); toast('No folder path', 'error'); return; }
+  if (!Object.keys(generatedFiles).length) { clientLog('warn', 'ui', 'Save all — no generated files'); toast('No files to save', 'error'); return; }
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, files: generatedFiles })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    clientLog('success', 'save', `Saved ${data.saved.length} files → ${folderPath}`);
+    toast(`Saved ${data.saved.length} files to project folder`);
+    if (data.errors?.length) { data.errors.forEach(e => clientLog('error', 'save', `${e.file}: ${e.error}`, e.error)); toast(`${data.errors.length} file(s) had errors`, 'error'); }
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'save', msg, err.message);
+    toast(msg, 'error');
+  }
+}
+
+// ══════════════════════════════════════════
+// PROMPT GENERATOR
+// ══════════════════════════════════════════
+async function handleGeneratePrompt() {
+  const task = $('promptTask').value.trim();
+  if (!task) { clientLog('warn', 'ui', 'Generate prompt clicked — no task description'); toast('Describe your task first', 'error'); return; }
+  const apiKey = getActiveKey();
+  if (!apiKey) { clientLog('warn', 'auth', `Generate prompt — no API key for ${currentProvider}`); toast(`No API key for ${PROVIDER_LABELS[currentProvider]}`, 'error'); return; }
+  const promptMode = document.querySelector('input[name="prompt-mode"]:checked').value;
+  clientLog('info', 'generator', `Prompt request: "${task.slice(0,60)}…" → ${$('promptTarget').value}, ${$('promptStyle').value}, mode=${promptMode}`);
+
+  const btn = $('genPromptBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating...';
+
+  try {
+    const res = await fetch('/api/generate-prompt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskDescription: task, targetAI: $('promptTarget').value, promptStyle: $('promptStyle').value,
+        includeProjectContext: $('promptIncludeCtx').checked, includeGeneratedFiles: $('promptIncludeFiles').checked,
+        generatedFiles, apiKey, modelName: $('modelSelect').value, provider: currentProvider, mode: promptMode
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (data.type === 'multi') {
+      renderMultiPrompt(data.guide, data.prompts);
+    } else {
+      $('promptGuide').classList.add('hidden'); $('promptTabs').classList.add('hidden'); $('promptWhen').classList.add('hidden');
+      $('promptContent').value = data.content || '';
+      $('saveAllPromptsBtn').classList.add('hidden');
+      currentPrompts = [{ filename: 'prompt.md', label: 'Prompt', when: '', content: data.content || '' }];
+      currentPromptIndex = 0;
+    }
+    const resultType = data.type === 'multi' ? `multi (${data.prompts?.length} prompts)` : 'single';
+    clientLog('success', 'generator', `Prompt generated: ${resultType}`);
+    toast('Prompt generated');
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'generator', msg, err.message);
+    toast(msg, 'error');
+  } finally { btn.disabled = false; btn.innerHTML = '✨ Generate Prompt'; }
+}
+
+function renderMultiPrompt(guide, prompts) {
+  currentPrompts = prompts;
+  const guideEl = $('promptGuide');
+  guideEl.textContent = '💡 ' + guide;
+  guideEl.classList.remove('hidden');
+  const tabBar = $('promptTabs');
+  tabBar.classList.remove('hidden');
+  tabBar.innerHTML = prompts.map((p, i) => `<button class="prompt-tab ${i === 0 ? 'active' : ''}" onclick="switchPromptTab(${i})">${escHtml(p.label)}</button>`).join('');
+  if (prompts.length > 1) $('saveAllPromptsBtn').classList.remove('hidden');
+  showPromptAt(0);
+}
+
+function switchPromptTab(index) {
+  document.querySelectorAll('.prompt-tab').forEach((t, i) => t.classList.toggle('active', i === index));
+  showPromptAt(index);
+}
+
+function showPromptAt(index) {
+  currentPromptIndex = index;
+  const p = currentPrompts[index];
+  if (!p) return;
+  const whenEl = $('promptWhen');
+  if (p.when) { whenEl.textContent = '⏱ ' + p.when; whenEl.classList.remove('hidden'); } else { whenEl.classList.add('hidden'); }
+  $('promptContent').value = p.content;
+}
+
+function copyPrompt() {
+  const text = $('promptContent').value;
+  if (text) { navigator.clipboard.writeText(text); toast('Copied to clipboard'); }
+}
+
+async function saveCurrentPrompt() {
+  const p = currentPrompts[currentPromptIndex];
+  if (!p) return;
+  const folderPath = $('folderPath').value.trim();
+  if (!folderPath) { clientLog('warn', 'ui', 'Save prompt — no folder path set'); toast('No folder path', 'error'); return; }
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, files: { [`prompts/${p.filename}`]: p.content } })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    clientLog('success', 'save', `Saved: prompts/${p.filename} → ${folderPath}`);
+    toast(`Saved: prompts/${p.filename}`);
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'save', msg, err.message);
+    toast(msg, 'error');
+  }
+}
+
+async function saveAllPrompts() {
+  if (!currentPrompts.length) return;
+  const folderPath = $('folderPath').value.trim();
+  if (!folderPath) { clientLog('warn', 'ui', 'Save all prompts — no folder path set'); toast('No folder path', 'error'); return; }
+  const files = {};
+  currentPrompts.forEach(p => { files[`prompts/${p.filename}`] = p.content; });
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, files })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    clientLog('success', 'save', `Saved ${currentPrompts.length} prompt files → ${folderPath}/prompts/`);
+    toast(`Saved ${currentPrompts.length} prompt files to /prompts/`);
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'save', msg, err.message);
+    toast(msg, 'error');
+  }
+}
+
+function resetPromptGenerator() {
+  currentPrompts = []; currentPromptIndex = 0;
+  $('promptTask').value = '';
+  $('promptGuide').classList.add('hidden'); $('promptTabs').classList.add('hidden'); $('promptWhen').classList.add('hidden');
+  $('promptContent').value = '';
+  $('saveAllPromptsBtn').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════
+async function sendChat() {
+  const input = $('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const apiKey = getActiveKey();
+  if (!apiKey) { clientLog('warn', 'auth', `Chat send — no API key for ${currentProvider}`); toast(`No API key for ${PROVIDER_LABELS[currentProvider]}`, 'error'); return; }
+
+  clientLog('info', 'chat', `User → [${$('chatRole').value}] "${text.slice(0,80)}${text.length>80?'…':''}"`);
+  appendChatMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  input.value = '';
+  const typingEl = appendChatMsg('assistant', '', true);
+  $('chatSendBtn').disabled = true;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: chatHistory, role: $('chatRole').value, includeProjectContext: $('chatUseContext').checked,
+        apiKey, modelName: $('modelSelect').value, provider: currentProvider
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    typingEl.remove();
+    appendChatMsg('assistant', data.reply);
+    chatHistory.push({ role: 'assistant', content: data.reply });
+    clientLog('success', 'chat', `Reply received (${data.reply.length} chars)`);
+  } catch (err) {
+    const msg = smartError(err.message);
+    clientLog('error', 'chat', msg, err.message);
+    typingEl.remove();
+    appendChatMsg('assistant', `Error: ${msg}`, false, true);
+  } finally { $('chatSendBtn').disabled = false; }
+}
+
+function appendChatMsg(role, content, isTyping = false, isError = false) {
+  const container = $('chatMessages');
+  const el = document.createElement('div');
+  el.className = `chat-msg chat-msg-${role}${isError ? ' chat-msg-error' : ''}`;
+  if (isTyping) {
+    el.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  } else {
+    el.innerHTML = formatChat(content);
+    if (role === 'assistant' && !isError) {
+      const cb = document.createElement('button');
+      cb.className = 'msg-copy-btn'; cb.textContent = 'Copy';
+      cb.onclick = () => { navigator.clipboard.writeText(content); toast('Copied'); };
+      el.appendChild(cb);
+    }
+  }
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+
+function formatChat(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+// Scan Settings
+// ══════════════════════════════════════════
+function toggleScanSettings() {
+  const toggle = $('scanToggle');
+  const fields = $('scanFields');
+  toggle.classList.toggle('open');
+  fields.classList.toggle('open');
+}
+
+async function loadScanConfig() {
+  try {
+    const res  = await fetch('/api/scan-config');
+    const data = await res.json();
+    const cfg  = data.config || {};
+    if (cfg.maxFiles)      { $('cfgMaxFiles').value = cfg.maxFiles;      $('lblMaxFiles').textContent = cfg.maxFiles; }
+    if (cfg.maxFileSizeKB) { $('cfgMaxSize').value  = cfg.maxFileSizeKB; $('lblMaxSize').textContent  = cfg.maxFileSizeKB; }
+    if (cfg.tokenBudget)   { $('cfgTokenBudget').value = cfg.tokenBudget; $('lblTokenBudget').textContent = Number(cfg.tokenBudget).toLocaleString(); }
+    if (cfg.maxLinesPerFile){ $('cfgMaxLines').value = cfg.maxLinesPerFile; $('lblMaxLines').textContent = cfg.maxLinesPerFile; }
+    if (cfg.excludePatterns?.length) $('cfgExclude').value = cfg.excludePatterns.join('\n');
+    if (cfg.respectGitignore === false) $('cfgGitignore').checked = false;
+  } catch { /* non-fatal */ }
+}
+
+async function saveScanConfig() {
+  const excludeRaw = $('cfgExclude').value.trim();
+  const config = {
+    maxFiles        : Number($('cfgMaxFiles').value),
+    maxFileSizeKB   : Number($('cfgMaxSize').value),
+    tokenBudget     : Number($('cfgTokenBudget').value),
+    maxLinesPerFile : Number($('cfgMaxLines').value),
+    respectGitignore: $('cfgGitignore').checked,
+    excludePatterns : excludeRaw ? excludeRaw.split('\n').map(s => s.trim()).filter(Boolean) : [],
+  };
+  try {
+    const res = await fetch('/api/scan-config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config })
+    });
+    if (res.ok) { toast('Scan settings saved'); clientLog('success', 'settings', 'Scan config saved', config); }
+    else        { toast('Failed to save settings', 'error'); }
+  } catch (e)  { toast('Failed to save settings', 'error'); }
+}
+
+function resetScanConfig() {
+  $('cfgMaxFiles').value    = 120; $('lblMaxFiles').textContent    = 120;
+  $('cfgMaxSize').value     = 500; $('lblMaxSize').textContent     = 500;
+  $('cfgTokenBudget').value = 60000; $('lblTokenBudget').textContent = '60,000';
+  $('cfgMaxLines').value    = 200; $('lblMaxLines').textContent    = 200;
+  $('cfgExclude').value     = '';
+  $('cfgGitignore').checked = true;
+  saveScanConfig();
+}
+
+// ── Token estimate ──────────────────────────────────────────────
+let estimateTimer = null;
+async function runEstimate() {
+  const folderPath = $('folderPath').value.trim();
+  if (!folderPath) { toast('Enter a folder path first', 'error'); return; }
+  const bar = $('estimateBar');
+  bar.classList.add('visible');
+  $('estFiles').textContent  = '...';
+  $('estTokens').textContent = '...';
+  $('estCosts').innerHTML    = '';
+  try {
+    const res  = await fetch('/api/estimate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath })
+    });
+    const data = await res.json();
+    if (data.error) { toast(data.error, 'error'); bar.classList.remove('visible'); return; }
+    $('estFiles').textContent  = `${data.filesRead ?? '?'} / ${data.totalFiles ?? '?'}`;
+    $('estTokens').textContent = Number(data.estimatedTokens || 0).toLocaleString();
+    if (data.costGuide) {
+      $('estCosts').innerHTML = Object.entries(data.costGuide)
+        .map(([m, c]) => `<span class="cost-tag">${m}: ${c}</span>`).join('');
+    }
+    clientLog('info', 'file-reader', `Estimate: ${data.totalFiles} files, ~${data.estimatedTokens?.toLocaleString()} tokens`);
+  } catch (e) { toast('Estimate failed', 'error'); }
+}
+
+// Auto-estimate when user finishes typing path (debounced)
+function scheduleEstimate() {
+  clearTimeout(estimateTimer);
+  estimateTimer = setTimeout(() => {
+    const p = $('folderPath').value.trim();
+    if (p.length > 3) runEstimate();
+  }, 1200);
+}
+
+// ── Drag-drop ───────────────────────────────────────────────────
+function setupDragDrop() {
+  const zone  = $('dropZone');
+  const input = $('folderPath');
+
+  // Prevent browser default for drag events on the entire window
+  ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+    document.addEventListener(evt, e => e.preventDefault());
+  });
+
+  zone.addEventListener('dragenter',  () => zone.classList.add('drag-over'));
+  zone.addEventListener('dragover',   () => zone.classList.add('drag-over'));
+  zone.addEventListener('dragleave',  () => zone.classList.remove('drag-over'));
+
+  zone.addEventListener('drop', e => {
+    zone.classList.remove('drag-over');
+    // Browser security: we can't get the real OS path from a drag event.
+    // Best we can do: grab the folder name and trigger the OS picker.
+    const items = e.dataTransfer?.items;
+    if (items && items.length) {
+      const entry = items[0].webkitGetAsEntry?.();
+      if (entry) {
+        if (!entry.isDirectory) { toast('Drop a folder, not a file', 'warn'); return; }
+        // Fill folder name as hint, then open OS picker for full path
+        clientLog('info', 'file-reader', `Drop detected: "${entry.name}" — opening OS picker for full path`);
+        toast(`Detected folder: "${entry.name}" — select it in the OS dialog`, 'warn', 4000);
+        triggerBrowse();
+        return;
+      }
+    }
+    // Fallback: just open OS picker
+    triggerBrowse();
+  });
+
+  // Clicking the drop zone also opens OS picker
+  zone.addEventListener('click', triggerBrowse);
+}
+
+async function triggerBrowse() {
+  $('browseBtn').disabled = true;
+  $('browseBtn').textContent = '...';
+  try {
+    const res  = await fetch('/api/browse-folder');
+    const data = await res.json();
+    if (data.path) {
+      $('folderPath').value = data.path;
+      clientLog('success', 'file-reader', `Folder selected: ${data.path}`);
+      runEstimate();
+    }
+  } catch { toast('Could not open folder dialog', 'error'); }
+  finally {
+    $('browseBtn').disabled = false;
+    $('browseBtn').textContent = '\uD83D\uDCC2';
+  }
+}
+
+// ── Cache status ────────────────────────────────────────────────
+async function checkCacheStatus() {
+  try {
+    const res  = await fetch('/api/cache-status');
+    const data = await res.json();
+    if (data.hasCache) {
+      $('cacheBadge').classList.add('visible');
+      $('cachePath').textContent = `${data.folderPath}  (${data.totalFiles} files, ${data.stack?.join(', ') || ''})`;
+    } else {
+      $('cacheBadge').classList.remove('visible');
+    }
+  } catch { /* non-fatal */ }
+}
+
+async function clearCache() {
+  try {
+    await fetch('/api/cache', { method: 'DELETE' });
+    $('cacheBadge').classList.remove('visible');
+    $('estimateBar').classList.remove('visible');
+    toast('Cache cleared');
+    clientLog('info', 'settings', 'Analysis cache cleared');
+  } catch { toast('Failed to clear cache', 'error'); }
+}
+
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  loadAllKeys();
+  updateKeyUI();
+  renderFileSelection();
+  setupListeners();
+  await loadProviderData();
+  setupDragDrop();
+  await loadScanConfig();
+  await checkCacheStatus();
+
+  // Auto-estimate when path changes
+  $('folderPath').addEventListener('input', scheduleEstimate);
+
+  // First-time: show guide if no key saved
+  const hasAnyKey = Object.keys(apiKeys).length > 0;
+  if (!hasAnyKey) {
+    clientLog('info', 'ui', 'No API key found — showing guide');
+    setTimeout(() => $('apiGuideModal').classList.remove('hidden'), 800);
+  }
+});
+</script>
+</body>
+</html>

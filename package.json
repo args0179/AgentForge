@@ -1,0 +1,21 @@
+{
+  "name": "agentforge",
+  "version": "1.0.0",
+  "description": "AI Agent File Generator Tool — analyze projects and generate AI agent configuration files",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@google/generative-ai": "^0.21.0",
+    "@anthropic-ai/sdk": "^0.30.0",
+    "openai": "^4.50.0",
+    "open": "^10.0.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  },
+  "keywords": ["ai", "agent", "generator", "gemini", "developer-tools"],
+  "license": "MIT"
+}
